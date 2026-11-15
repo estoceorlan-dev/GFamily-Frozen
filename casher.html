@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="GFamily sales and inventory workspace." />
+    <title>Cashier · GFamily</title>
+    <link
+      rel="preload"
+      href="fonts/inter-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-role="Cashier">
+    <div id="system">
+      <a class="skip-link" href="#mainContent">Skip to content</a
+      ><button
+        type="button"
+        id="navBackdrop"
+        class="fixed inset-0 z-40 bg-zinc-950/30 backdrop-blur-sm lg:hidden"
+        onclick="toggleSidebar(false)"
+        aria-label="Close navigation"
+        hidden
+      ></button>
+      <aside class="sidebar" id="appSidebar" aria-label="Store navigation">
+        <div class="sidebar-logo">
+          <div class="brand-mark">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9 5l3 3 3-3M9 19l3-3 3 3M4 11l4-1-1-4M20 13l-4 1 1 4M7 18l1-4-4-1M17 6l-1 4 4 1"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 class="brand-name">GFamily</h2>
+            <small>Frozen products</small>
+          </div>
+          <button
+            class="icon-button ml-auto lg:hidden"
+            type="button"
+            onclick="toggleSidebar(false)"
+            aria-label="Close navigation"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <p class="eyebrow mb-3 px-3">Workspace</p>
+        <nav class="menu" aria-label="Primary navigation">
+          <button
+            type="button"
+            data-page="pos"
+            class="active"
+            aria-label="New sale"
+            title="New sale"
+            aria-current="page"
+            onclick="showPage('pos', this)"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 4h2l2.5 12h11L21 8H6" />
+              <circle cx="9" cy="20" r="1" />
+              <circle cx="18" cy="20" r="1" /></svg
+            ><span>New sale</span>
+          </button>
+          <button
+            type="button"
+            data-page="customers"
+            class=""
+            aria-label="Customers"
+            title="Customers"
+            onclick="showPage('customers', this)"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="9" cy="8" r="3" />
+              <path
+                d="M3 21v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M17 15a5 5 0 0 1 4 5v1"
+              /></svg
+            ><span>Customers</span>
+          </button>
+          <button
+            type="button"
+            data-page="sales"
+            class=""
+            aria-label="Sales"
+            title="Sales"
+            onclick="showPage('sales', this)"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+              <path d="M9 7h6M9 11h6M9 15h3" /></svg
+            ><span>Sales</span>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="logout">
+            <button type="button" onclick="logout()">
+              <svg
+                class="size-[18px]"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M9 4H4v16h5M13 8l4 4-4 4M8 12h13" /></svg
+              ><span>Sign out</span>
+            </button>
+          </div>
+          <p>GFamily store workspace</p>
+        </div>
+      </aside>
+      <main class="main" id="mainContent" tabindex="-1">
+        <header class="topbar">
+          <div class="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              class="icon-button lg:hidden"
+              id="menuToggle"
+              onclick="toggleSidebar()"
+              aria-label="Open navigation"
+              aria-controls="appSidebar"
+              aria-expanded="false"
+            >
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div class="breadcrumb">
+              <span class="hidden sm:inline">Workspace</span
+              ><svg
+                class="hidden size-3 text-zinc-400 sm:block"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m9 5 7 7-7 7" /></svg
+              ><span id="pageHeading">New sale</span>
+            </div>
+          </div>
+          <div class="topbar-actions">
+            <button
+              type="button"
+              class="icon-button"
+              onclick="refreshDashboard()"
+              aria-label="Refresh data"
+              title="Refresh"
+            >
+              <svg
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M20 8a8 8 0 0 0-14-3L3 8m0-5v5h5M4 16a8 8 0 0 0 14 3l3-3m0 5v-5h-5"
+                />
+              </svg></button
+            ><button
+              type="button"
+              class="icon-button"
+              onclick="changeMyPassword()"
+              aria-label="Change password"
+              title="Change password"
+            >
+              <svg
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="5" y="10" width="14" height="11" rx="2" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+              </svg>
+            </button>
+            <div class="user-info">
+              <div class="hidden sm:block">
+                <strong id="currentUser">Account</strong
+                ><small id="currentRole">Cashier</small>
+              </div>
+              <div class="avatar" aria-hidden="true">G</div>
+            </div>
+          </div>
+        </header>
+        <div class="workspace">
+          <div
+            class="app-message"
+            id="appMessage"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></div>
+          <section id="pos" class="page active" aria-labelledby="posTitle">
+            <div class="page-title">
+              <h1 id="posTitle">New sale</h1>
+              <div class="page-actions">
+                <span class="date-label" data-store-date></span>
+              </div>
+            </div>
+            <div class="pos-layout">
+              <div class="min-w-0">
+                <div class="catalog-toolbar">
+                  <div class="search-wrap">
+                    <label class="sr-only" for="productSearch"
+                      >Search products</label
+                    ><svg
+                      class="icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <circle cx="10.5" cy="10.5" r="6.5" />
+                      <path d="m16 16 5 5" /></svg
+                    ><input
+                      type="search"
+                      class="search"
+                      id="productSearch"
+                      placeholder="Search products"
+                      oninput="filterProducts()"
+                    />
+                  </div>
+                  <span
+                    id="productCount"
+                    class="text-[11px] font-medium text-zinc-500"
+                  ></span>
+                </div>
+                <div
+                  id="productCategoryFilters"
+                  class="category-filters"
+                  aria-label="Product categories"
+                ></div>
+                <div class="products-grid">
+                  <p class="empty-state col-span-full">Loading products…</p>
+                </div>
+                <p id="productSearchEmpty" class="empty-state" hidden>
+                  No matching products.
+                </p>
+              </div>
+              <aside class="cart" aria-label="Current order">
+                <div class="cart-heading">
+                  <h2>Current order</h2>
+                  <span
+                    id="cartCount"
+                    class="count-pill"
+                    aria-label="Cart items"
+                    >0</span
+                  >
+                </div>
+                <div class="cart-fields">
+                  <div>
+                    <label class="cart-field" for="saleCustomer">Customer</label
+                    ><select id="saleCustomer" class="cart-select">
+                      <option value="">Walk-in customer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="cart-field" for="paymentMethod">Payment</label
+                    ><select id="paymentMethod" class="cart-select">
+                      <option>Cash</option>
+                      <option>GCash</option>
+                      <option>Card</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="cartItems">
+                  <p class="empty-state">No products added.</p>
+                </div>
+                <div class="cart-checkout">
+                  <div class="total">
+                    <span>Total</span><span id="cartTotal">₱0.00</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-primary w-full"
+                    onclick="checkout()"
+                    disabled
+                  >
+                    Complete sale
+                  </button>
+                </div>
+              </aside>
+            </div>
+          </section>
+          <section id="customers" class="page" aria-labelledby="customersTitle">
+            <div class="page-title">
+              <h1 id="customersTitle">Customers</h1>
+              <div class="page-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="addCustomer()"
+                >
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14M5 12h14" /></svg
+                  >Add customer
+                </button>
+              </div>
+            </div>
+            <div class="table-box">
+              <div class="table-header">
+                <div class="search-wrap">
+                  <label class="sr-only" for="customerSearch"
+                    >Search customers</label
+                  ><svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="10.5" cy="10.5" r="6.5" />
+                    <path d="m16 16 5 5" /></svg
+                  ><input
+                    type="search"
+                    class="search"
+                    id="customerSearch"
+                    placeholder="Search customers"
+                    oninput="searchTable(this)"
+                  />
+                </div>
+              </div>
+              <div class="table-scroll">
+                <table class="min-w-[640px]">
+                  <thead>
+                    <tr>
+                      <th scope="col">Code</th>
+                      <th scope="col">Name</th>
+                      <th scope="col">Contact</th>
+                      <th scope="col" class="text-right">Total spent</th>
+                      <th scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customerRows">
+                    <tr>
+                      <td colspan="5" class="empty-state">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          <section id="sales" class="page" aria-labelledby="salesTitle">
+            <div class="page-title">
+              <h1 id="salesTitle">Sales</h1>
+              <div class="page-actions">
+                <span class="date-label" data-store-date></span>
+              </div>
+            </div>
+            <div class="table-box">
+              <div class="table-header">
+                <div class="report-filters">
+                  <label for="reportFrom"
+                    >From<input type="date" id="reportFrom" /></label
+                  ><label for="reportTo"
+                    >To<input type="date" id="reportTo" /></label
+                  ><button
+                    type="button"
+                    class="btn btn-warning"
+                    onclick="applySalesDates()"
+                  >
+                    Apply
+                  </button>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-warning"
+                    onclick="exportReport('transactions')"
+                  >
+                    <svg
+                      class="icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3v12m-4-4 4 4 4-4M5 15v6h14v-6" /></svg
+                    >Export
+                  </button>
+                </div>
+              </div>
+              <div class="table-scroll">
+                <table class="min-w-[640px]">
+                  <thead>
+                    <tr>
+                      <th scope="col">Transaction</th>
+                      <th scope="col">Customer</th>
+                      <th scope="col">Date</th>
+                      <th scope="col" class="text-right">Amount</th>
+                      <th scope="col">Payment</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="salesRows">
+                    <tr>
+                      <td colspan="7" class="empty-state">Loading…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination" id="salesPager">
+                <button
+                  type="button"
+                  class="btn btn-warning"
+                  data-direction="previous"
+                  onclick="pageSales(-1)"
+                >
+                  Previous</button
+                ><span aria-live="polite">Page 1</span
+                ><button
+                  type="button"
+                  class="btn btn-warning"
+                  data-direction="next"
+                  onclick="pageSales(1)"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div
+      id="modalOverlay"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3 id="modalTitle">Details</h3>
+          <button
+            type="button"
+            class="close-modal"
+            onclick="closeModal()"
+            aria-label="Close"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="modalForm">
+            <div id="modalFields"></div>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-warning"
+                onclick="closeModal()"
+              >
+                Cancel</button
+              ><button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div
+      id="receiptOverlay"
+      class="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="receiptTitle"
+    >
+      <div class="modal-box receipt-box">
+        <div class="modal-header">
+          <h3 id="receiptTitle">Receipt</h3>
+          <button
+            type="button"
+            class="close-modal"
+            onclick="closeReceipt()"
+            aria-label="Close receipt"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body" id="receiptContent"></div>
+        <div class="form-actions receipt-actions">
+          <button
+            type="button"
+            class="btn btn-warning"
+            onclick="closeReceipt()"
+          >
+            Close</button
+          ><button
+            type="button"
+            class="btn btn-primary"
+            onclick="printReceipt()"
+          >
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 8V3h12v5M6 17H3v-9h18v9h-3M6 14h12v7H6zM17 11h1"
+              /></svg
+            >Print receipt
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="project.js"></script>
+  </body>
+</html>

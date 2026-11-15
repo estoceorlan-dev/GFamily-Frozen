@@ -1,0 +1,670 @@
+@import "tailwindcss" source(none);
+@source "../admindashboard.html";
+@source "../casher.html";
+@source "../clerk.html";
+@source "../project.js";
+
+@font-face {
+  font-family: "Inter";
+  src: url("fonts/inter-latin-wght-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Inter", "Segoe UI Variable", "Segoe UI", sans-serif;
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-600: #047857;
+  --color-brand-700: #065f46;
+  --color-canvas: #f7f8fa;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-canvas font-sans text-sm text-zinc-900 antialiased;
+  }
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  svg {
+    flex-shrink: 0;
+  }
+  :focus-visible {
+    outline: 2px solid #047857;
+    outline-offset: 3px;
+  }
+  ::selection {
+    background: #d1fae5;
+    color: #064e3b;
+  }
+}
+
+@layer components {
+  .icon {
+    @apply size-5;
+  }
+  .brand-mark {
+    @apply grid size-10 shrink-0 place-items-center rounded-xl bg-zinc-950 text-white;
+  }
+  .brand-name {
+    @apply text-base font-semibold tracking-tight text-zinc-950;
+  }
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500;
+  }
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3;
+  }
+  #system {
+    display: none;
+  }
+  .sidebar {
+    @apply fixed inset-y-0 left-0 z-50 flex w-60 flex-col border-r border-zinc-200 bg-white px-4 py-6 transition-transform duration-200;
+  }
+  .sidebar-logo {
+    @apply mb-10 flex items-center gap-3 px-2;
+  }
+  .sidebar-logo small {
+    @apply mt-0.5 block text-xs text-zinc-500;
+  }
+  .menu {
+    @apply flex flex-col gap-1;
+  }
+  .menu button {
+    @apply flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-[13px] font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950;
+  }
+  .menu button svg {
+    @apply size-[18px] text-zinc-500;
+  }
+  .menu button.active {
+    @apply bg-brand-50 font-semibold text-brand-700;
+  }
+  .menu button.active svg {
+    @apply text-brand-600;
+  }
+  .menu button.active::after {
+    content: "";
+    @apply ml-auto size-1.5 rounded-full bg-brand-600;
+  }
+  .sidebar-footer {
+    @apply mt-auto space-y-3 border-t border-zinc-100 px-2 pt-5;
+  }
+  .sidebar-footer > p {
+    @apply text-[11px] leading-relaxed text-zinc-500;
+  }
+  .logout button {
+    @apply flex min-h-10 w-full items-center gap-3 rounded-lg px-2 text-[13px] font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950;
+  }
+  .main {
+    @apply min-h-screen lg:ml-60;
+  }
+  .topbar {
+    @apply sticky top-0 z-30 flex h-[76px] items-center justify-between gap-4 border-b border-zinc-200 bg-white/95 px-5 backdrop-blur-md sm:px-8;
+  }
+  .breadcrumb {
+    @apply flex min-w-0 items-center gap-3 text-xs text-zinc-500;
+  }
+  .breadcrumb #pageHeading {
+    @apply truncate font-medium text-zinc-900;
+  }
+  .topbar-actions {
+    @apply flex items-center gap-2 sm:gap-3;
+  }
+  .icon-button {
+    @apply inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950;
+  }
+  .user-info {
+    @apply ml-1 flex items-center gap-3 border-l border-zinc-200 pl-3 sm:ml-2 sm:pl-5;
+  }
+  .user-info strong {
+    @apply block text-xs font-semibold text-zinc-900;
+  }
+  .user-info small {
+    @apply mt-0.5 block text-[11px] text-zinc-500;
+  }
+  .avatar {
+    @apply grid size-9 shrink-0 place-items-center rounded-full bg-zinc-900 text-xs font-semibold text-white;
+  }
+  .workspace {
+    @apply mx-auto max-w-[1560px] px-5 py-7 sm:px-8 sm:py-9;
+  }
+  .page {
+    display: none;
+  }
+  .page.active {
+    display: block;
+  }
+  .page-title {
+    @apply mb-7 flex flex-wrap items-center justify-between gap-4;
+  }
+  .page-title h1 {
+    @apply text-[28px] font-semibold tracking-[-0.04em] text-zinc-950 sm:text-[32px];
+  }
+  .page-actions {
+    @apply flex flex-wrap items-center gap-3;
+  }
+  .date-label {
+    @apply hidden text-xs font-medium text-zinc-500 sm:block;
+  }
+  .cards {
+    @apply mb-7 grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-4;
+  }
+  .card {
+    @apply rounded-xl border border-zinc-200 bg-white p-5 sm:p-6;
+  }
+  .card-top {
+    @apply mb-5 flex items-center justify-between gap-2;
+  }
+  .card-title {
+    @apply text-xs font-medium text-zinc-600;
+  }
+  .card-icon {
+    @apply text-zinc-400;
+  }
+  .card-value {
+    @apply text-[22px] leading-none font-semibold tracking-[-0.045em] text-zinc-950 tabular-nums sm:text-[30px];
+  }
+  #salesToday {
+    font-size: clamp(1.125rem, 2.1vw, 1.875rem);
+  }
+  .card-footnote {
+    @apply mt-3 text-[11px] font-medium text-zinc-500;
+  }
+  .table-box {
+    @apply overflow-hidden rounded-xl border border-zinc-200 bg-white;
+  }
+  .table-header {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-5 py-4;
+  }
+  .table-header h3 {
+    @apply text-[13px] font-semibold text-zinc-900;
+  }
+  .table-scroll {
+    @apply overflow-x-auto;
+  }
+  table {
+    @apply w-full border-collapse text-left text-xs;
+  }
+  th {
+    @apply border-b border-zinc-200 bg-zinc-50/80 px-5 py-3 text-[11px] font-medium whitespace-nowrap text-zinc-500;
+  }
+  td {
+    @apply border-b border-zinc-100 px-5 py-4 leading-relaxed text-zinc-700;
+  }
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  tbody tr:hover {
+    @apply bg-zinc-50/70;
+  }
+  td:first-child {
+    @apply max-w-48 truncate font-medium text-zinc-900;
+  }
+  td.numeric {
+    @apply text-right font-medium text-zinc-900 tabular-nums;
+  }
+  td.actions {
+    @apply whitespace-nowrap;
+  }
+  td.actions .btn + .btn {
+    @apply ml-2;
+  }
+  .btn {
+    @apply inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent px-3.5 text-xs font-semibold whitespace-nowrap transition-colors;
+  }
+  .btn svg {
+    @apply size-4;
+  }
+  .btn-primary,
+  .login-btn {
+    @apply bg-zinc-950 text-white hover:bg-zinc-800;
+  }
+  .btn-warning {
+    @apply border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950;
+  }
+  .btn-ghost {
+    @apply bg-transparent px-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950;
+  }
+  .btn-danger {
+    @apply bg-red-50 text-red-700 hover:bg-red-100;
+  }
+  .btn:disabled,
+  .login-btn:disabled {
+    @apply opacity-45;
+  }
+  td .btn {
+    @apply min-h-8 rounded-md px-2.5 text-[11px];
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[10px] leading-none font-semibold whitespace-nowrap;
+  }
+  .badge::before {
+    content: "";
+    @apply size-1 rounded-full bg-current;
+  }
+  .badge.available {
+    @apply bg-emerald-50 text-emerald-800;
+  }
+  .badge.low {
+    @apply bg-amber-50 text-amber-800;
+  }
+  .badge.out {
+    @apply bg-red-50 text-red-800;
+  }
+  .alert {
+    @apply mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900;
+  }
+  .app-message {
+    @apply mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs leading-relaxed text-emerald-900;
+  }
+  .search-wrap {
+    @apply relative w-full sm:w-72;
+  }
+  .search-wrap > svg {
+    @apply pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400;
+  }
+  .search {
+    @apply min-h-10 w-full rounded-lg border border-zinc-200 bg-white py-2 pr-3 pl-9 text-xs text-zinc-900 placeholder:text-zinc-500 focus:border-brand-600 focus:ring-2 focus:ring-brand-100 focus:outline-none;
+  }
+  .pos-layout {
+    @apply grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px];
+  }
+  .catalog-toolbar {
+    @apply mb-4 flex flex-wrap items-center justify-between gap-3;
+  }
+  .category-filters {
+    @apply mb-5 flex flex-wrap gap-2;
+  }
+  .category-filter {
+    @apply min-h-8 rounded-lg border border-zinc-200 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:border-zinc-400;
+  }
+  .category-filter.active {
+    @apply border-zinc-950 bg-zinc-950 text-white;
+  }
+  .products-grid {
+    @apply grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3;
+  }
+  .product-card {
+    @apply flex min-h-44 flex-col rounded-xl border border-zinc-200 bg-white p-4 text-left transition-colors hover:border-brand-600 hover:bg-brand-50/30 sm:p-5;
+  }
+  .product-topline {
+    @apply mb-6 flex items-start justify-between gap-2;
+  }
+  .product-symbol {
+    @apply grid size-9 place-items-center rounded-lg bg-zinc-100 text-zinc-500;
+  }
+  .product-category {
+    @apply max-w-24 truncate pt-1 text-[10px] font-medium text-zinc-500;
+  }
+  .product-card strong {
+    @apply text-[13px] leading-snug font-semibold text-zinc-900;
+  }
+  .product-bottom {
+    @apply mt-auto flex items-end justify-between gap-2 pt-4;
+  }
+  .product-card .price {
+    @apply block text-sm font-semibold tracking-tight text-zinc-900 tabular-nums;
+  }
+  .product-card small {
+    @apply mt-1 block text-[10px] text-zinc-500;
+  }
+  .product-add {
+    @apply grid size-7 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700;
+  }
+  .product-card:disabled {
+    @apply bg-zinc-50 opacity-55;
+  }
+  .product-card:disabled .product-add {
+    @apply bg-zinc-200 text-zinc-500;
+  }
+  .cart {
+    @apply overflow-hidden rounded-xl border border-zinc-200 bg-white xl:sticky xl:top-24;
+  }
+  .cart-heading {
+    @apply flex items-center justify-between border-b border-zinc-100 px-5 py-5;
+  }
+  .cart-heading h2 {
+    @apply text-sm font-semibold tracking-tight;
+  }
+  .count-pill {
+    @apply grid size-6 place-items-center rounded-md bg-zinc-100 text-[10px] font-semibold text-zinc-600 tabular-nums;
+  }
+  .cart-fields {
+    @apply grid grid-cols-2 gap-3 border-b border-zinc-100 px-5 py-4;
+  }
+  .cart-field {
+    @apply mb-1.5 block text-[10px] font-medium text-zinc-600;
+  }
+  .cart-select {
+    @apply min-h-10 w-full rounded-lg border border-zinc-200 bg-white px-2 text-[11px] text-zinc-800;
+  }
+  #cartItems {
+    @apply px-5;
+  }
+  .cart-item {
+    @apply flex items-start justify-between gap-3 border-b border-zinc-100 py-4;
+  }
+  .cart-item:last-child {
+    border-bottom: 0;
+  }
+  .cart-item strong {
+    @apply text-xs font-semibold text-zinc-900;
+  }
+  .cart-item label {
+    @apply mt-3 flex items-center gap-2 text-[10px] text-zinc-500;
+  }
+  .cart-quantity {
+    @apply min-h-8 w-[68px] rounded-md border border-zinc-200 bg-zinc-50 px-2 text-xs text-zinc-900 tabular-nums;
+  }
+  .cart-item small {
+    @apply mt-1 block text-[10px] text-zinc-500;
+  }
+  .cart-item .btn-danger {
+    @apply mt-2 min-h-7 px-2;
+  }
+  .cart-checkout {
+    @apply border-t border-zinc-100 bg-zinc-50/60 p-5;
+  }
+  .total {
+    @apply mb-5 flex items-center justify-between text-xs font-medium text-zinc-600;
+  }
+  #cartTotal {
+    @apply text-2xl font-semibold tracking-[-0.035em] text-zinc-950 tabular-nums;
+  }
+  .empty-state {
+    @apply px-5 py-12 text-center text-xs leading-relaxed font-normal text-zinc-500;
+  }
+  .pagination {
+    @apply flex items-center justify-between gap-3 border-t border-zinc-100 px-5 py-4;
+  }
+  .pagination span {
+    @apply text-[11px] text-zinc-500;
+  }
+  .pagination .btn {
+    @apply min-h-8 px-2.5 text-[11px];
+  }
+  .stock-history {
+    @apply mt-6;
+  }
+  .stock-history summary {
+    @apply flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-5 text-[13px] font-semibold text-zinc-800;
+  }
+  .stock-history summary::-webkit-details-marker {
+    display: none;
+  }
+  .stock-history summary svg {
+    @apply size-4 text-zinc-500 transition-transform;
+  }
+  .stock-history[open] summary {
+    @apply border-b border-zinc-100;
+  }
+  .stock-history[open] summary svg {
+    transform: rotate(180deg);
+  }
+  .report-grid {
+    @apply mb-6 grid gap-4 sm:grid-cols-2;
+  }
+  .report-card {
+    @apply flex flex-wrap items-center justify-between gap-5 rounded-xl border border-zinc-200 bg-white p-5 sm:p-6;
+  }
+  .report-card h3 {
+    @apply mb-3 text-xs font-medium text-zinc-600;
+  }
+  .report-card strong {
+    @apply text-2xl font-semibold tracking-tight text-zinc-950 tabular-nums;
+  }
+  .report-card p {
+    @apply mt-2 text-[11px] text-zinc-500;
+  }
+  .report-filters {
+    @apply flex flex-wrap items-end gap-3;
+  }
+  .report-filters label {
+    @apply grid gap-1.5 text-[10px] font-medium text-zinc-500;
+  }
+  .report-filters input {
+    @apply min-h-9 rounded-lg border border-zinc-200 px-2.5 text-[11px] text-zinc-800;
+  }
+  .modal-overlay {
+    @apply fixed inset-0 z-[70] hidden items-center justify-center bg-zinc-950/40 p-4 backdrop-blur-sm;
+  }
+  .modal-overlay.show {
+    display: flex;
+  }
+  .modal-box {
+    @apply max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-xl;
+  }
+  .modal-header {
+    @apply flex items-center justify-between gap-4 border-b border-zinc-100 px-6 py-5;
+  }
+  .modal-header h3 {
+    @apply text-base font-semibold tracking-tight;
+  }
+  .close-modal {
+    @apply grid size-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950;
+  }
+  .modal-body {
+    @apply p-6;
+  }
+  .form-group {
+    @apply mb-4;
+  }
+  .form-group label {
+    @apply mb-2 block text-xs font-medium text-zinc-700;
+  }
+  .form-group input,
+  .form-group select {
+    @apply min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900;
+  }
+  .form-actions {
+    @apply mt-6 flex justify-end gap-2;
+  }
+  .modal-error {
+    @apply mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-800;
+  }
+  .receipt-box {
+    @apply max-w-xl;
+  }
+  .receipt-actions {
+    @apply m-0 px-6 pb-6;
+  }
+  #receiptContent > h2 {
+    @apply mb-4 text-lg font-semibold tracking-tight;
+  }
+  #receiptContent > p {
+    @apply mb-2 text-xs leading-relaxed text-zinc-600;
+  }
+  #receiptContent table {
+    @apply my-5;
+  }
+  #receiptContent th,
+  #receiptContent td {
+    @apply px-2;
+  }
+  #receiptContent > h3 {
+    @apply mt-5 text-lg font-semibold tabular-nums;
+  }
+  #loginPage {
+    @apply flex min-h-dvh items-center justify-center px-5 py-12;
+  }
+  .login-box {
+    @apply w-full max-w-[390px];
+  }
+  .login-brand {
+    @apply mb-10 flex items-center justify-center gap-3;
+  }
+  .login-panel {
+    @apply rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm sm:p-8;
+  }
+  .login-panel h1 {
+    @apply text-[25px] font-semibold tracking-[-0.04em] text-zinc-950;
+  }
+  .input-group {
+    @apply mt-5;
+  }
+  .input-group label {
+    @apply mb-2 block text-xs font-medium text-zinc-700;
+  }
+  .input-group input,
+  .input-group select {
+    @apply min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-[13px] text-zinc-900 placeholder:text-zinc-500;
+  }
+  .input-group input:focus,
+  .input-group select:focus,
+  .form-group input:focus,
+  .form-group select:focus,
+  .cart-select:focus {
+    @apply border-brand-600 ring-2 ring-brand-100 outline-none;
+  }
+  .password-control {
+    @apply relative;
+  }
+  .password-control input {
+    @apply pr-16;
+  }
+  .password-toggle {
+    @apply absolute top-1/2 right-2 -translate-y-1/2 rounded px-2 py-1 text-[11px] font-semibold text-zinc-600 hover:bg-zinc-100;
+  }
+  .login-btn {
+    @apply mt-6 min-h-11 w-full rounded-lg text-xs font-semibold;
+  }
+  .auth-toggle {
+    @apply mt-5 w-full text-center text-xs font-medium text-zinc-600 hover:text-zinc-950;
+  }
+  #authMessage {
+    @apply mt-4 text-center text-xs leading-relaxed text-zinc-600;
+  }
+  #authMessage:empty {
+    display: none;
+  }
+  #printArea {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .sidebar {
+    visibility: hidden;
+    transform: translateX(-100%);
+  }
+  body.nav-open .sidebar {
+    visibility: visible;
+    transform: translateX(0);
+  }
+  body.nav-open {
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  .sidebar,
+  .topbar,
+  .btn,
+  .pagination,
+  .search-wrap,
+  .report-filters,
+  .modal-overlay,
+  #navBackdrop {
+    display: none !important;
+  }
+  .main {
+    margin: 0;
+  }
+  .workspace {
+    padding: 0;
+  }
+  .table-box {
+    overflow: visible;
+    border: 0;
+  }
+  .table-scroll {
+    overflow: visible;
+  }
+  table {
+    width: 100%;
+  }
+  th,
+  td {
+    padding: 8px;
+    color: black;
+  }
+  td:first-child {
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  body.printing-report > :not(#printArea) {
+    display: none !important;
+  }
+  body.printing-report #printArea {
+    display: block;
+  }
+  #printArea h1 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  #printArea h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    text-transform: capitalize;
+  }
+  #printArea p {
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  body.printing-receipt #system,
+  body.printing-receipt #loginPage {
+    display: none !important;
+  }
+  body.printing-receipt #receiptOverlay {
+    display: block !important;
+    position: static;
+    padding: 0;
+    background: white;
+    backdrop-filter: none;
+  }
+  body.printing-receipt .receipt-box {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+  }
+  body.printing-receipt .modal-header,
+  body.printing-receipt .receipt-actions {
+    display: none;
+  }
+}

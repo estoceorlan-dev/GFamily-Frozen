@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: gfamily-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev && npm run build && npm prune --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: DB_POOL_SIZE
+        value: "5"
+      - key: OWNER_SETUP_TOKEN
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false

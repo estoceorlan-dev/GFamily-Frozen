@@ -1,0 +1,146 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import pg from "pg";
+import { migrate, poolConfiguration } from "../../database.js";
+import { createApp } from "../../server.js";
+
+test("PostgreSQL HTTP workflows, permissions, concurrency, and persistence", { skip: !process.env.TEST_DATABASE_URL }, async (t) => {
+    const url = process.env.TEST_DATABASE_URL;
+    const schema = `test_${crypto.randomUUID().replaceAll("-", "")}`;
+    const admin = new pg.Pool(poolConfiguration({ DATABASE_URL: url }));
+    await admin.query(`CREATE SCHEMA ${schema}`);
+    const pool = new pg.Pool({ ...poolConfiguration({ DATABASE_URL: url }), options: `-c search_path=${schema} -c timezone=UTC` });
+    let server;
+    t.after(async () => {
+        if (server) { server.closeAllConnections(); await new Promise((done) => server.close(done)); }
+        await pool.end();
+        await admin.query(`DROP SCHEMA ${schema} CASCADE`);
+        await admin.end();
+    });
+    await migrate(pool);
+    await migrate(pool);
+    assert.equal((await pool.query("SELECT COUNT(*) FROM products")).rows[0].count, "0");
+    server = createApp({ pool, env: { OWNER_SETUP_TOKEN: "test-setup-token", FRONTEND_URL: "https://store.example" } }).listen(0, "127.0.0.1");
+    await new Promise((done) => server.once("listening", done));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    async function call(path, { method = "GET", body, cookie, origin, raw } = {}) {
+        const response = await fetch(`${base}/api/${path}`, { method, headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}), ...(origin ? { origin } : {}) }, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
+        return { status: response.status, body: await response.json(), cookie: response.headers.get("set-cookie")?.split(";")[0], headers: response.headers };
+    }
+    async function expect(path, options, status = 200) {
+        const result = await call(path, options);
+        assert.equal(result.status, status, `${path}: ${JSON.stringify(result.body)}`);
+        return result;
+    }
+    const password = "test-secure-password";
+    const account = (username, role = "Owner / Manager") => ({ username, password, role, setupToken: "test-setup-token" });
+    await t.test("bootstrap token, concurrent setup, secure sessions, validation, and health", async () => {
+        await expect("health");
+        await expect("products", {}, 401);
+        await expect("register", { method: "POST", body: { ...account("bad"), setupToken: "wrong" } }, 403);
+        const attempts = await Promise.all(["manager", "racing-owner"].map((username) => call("register", { method: "POST", body: account(username) })));
+        assert.deepEqual(attempts.map((item) => item.status).sort(), [201, 403]);
+        const username = attempts[0].status === 201 ? "manager" : "racing-owner";
+        const login = await expect("login", { method: "POST", body: account(username) });
+        t.ownerCookie = login.cookie;
+        t.ownerId = login.body.userId;
+        assert.match(login.headers.get("set-cookie"), /HttpOnly; SameSite=Strict/);
+        assert.equal((await expect("setup-status")).body.ownerSetupAvailable, false);
+        await expect("login", { method: "POST", body: { ...account(username), password: "wrong" } }, 401);
+        await expect("products", { method: "POST", body: {}, cookie: t.ownerCookie, origin: "https://evil.example" }, 403);
+        await expect("products", { method: "POST", raw: "{", cookie: t.ownerCookie }, 400);
+    });
+    let productId, customerId, supplierId, cashierCookie, clerkCookie, saleId;
+    await t.test("catalog, contacts, staff creation and role permissions", async () => {
+        const owner = t.ownerCookie;
+        const product = await expect("products", { method: "POST", cookie: owner, body: { productName: "Chicken", category: "Frozen", unit: "kg", sellingPrice: "10.01", currentStock: 10, minimumStock: 2 } }, 201);
+        productId = product.body.productId;
+        assert.ok(Number.isInteger(productId));
+        await expect("products", { method: "POST", cookie: owner, body: { productName: "Bad", category: "Frozen", unit: "kg", sellingPrice: true, currentStock: 1, minimumStock: 0 } }, 400);
+        const customer = await expect("customers", { method: "POST", cookie: owner, body: { fullName: "Test Customer", contactNumber: "09123456789" } }, 201);
+        customerId = customer.body.customerId;
+        const supplier = await expect("suppliers", { method: "POST", cookie: owner, body: { supplierName: "Frozen Supplier", contactPerson: "Test Contact", contactNumber: "09999999999" } }, 201);
+        supplierId = supplier.body.supplierId;
+        await expect(`customers/${customerId}`, { method: "PATCH", cookie: owner, body: { fullName: "Updated Customer", contactNumber: "09123456789" } });
+        for (const [username, role] of [["cashier", "Cashier"], ["clerk", "Store Clerk"]]) await expect("register", { method: "POST", cookie: owner, body: account(username, role) }, 201);
+        await expect("register", { method: "POST", cookie: owner, body: account("CASHIER", "Cashier") }, 409);
+        cashierCookie = (await expect("login", { method: "POST", body: account("CASHIER", "Cashier") })).cookie;
+        clerkCookie = (await expect("login", { method: "POST", body: account("clerk", "Store Clerk") })).cookie;
+        await expect("products", { cookie: clerkCookie });
+        await expect("reports/summary", { cookie: cashierCookie }, 403);
+        await expect("sales", { cookie: clerkCookie }, 403);
+        await expect("users", { cookie: clerkCookie }, 403);
+        await expect("stock-in", { method: "POST", cookie: cashierCookie, body: { productId, quantity: 1 } }, 403);
+        await expect("stock-in", { method: "POST", cookie: clerkCookie, body: { productId, quantity: 2.5, unitCost: 8, supplierId, referenceNumber: "REF-1", notes: "Frozen delivery" } }, 201);
+        assert.equal((await expect("stock-receipts", { cookie: clerkCookie })).body[0].reference_number, "REF-1");
+    });
+    await t.test("fractional checkout, duplicate request protection, receipt snapshots, and reports", async () => {
+        const payload = { customerId, paymentMethod: "GCash", requestId: crypto.randomUUID(), items: [{ productId, quantity: 0.5, unitPrice: 10.01 }] };
+        const attempts = await Promise.all([1, 2].map(() => call("sales", { method: "POST", cookie: cashierCookie, body: payload })));
+        assert.deepEqual(attempts.map((item) => item.status).sort(), [200, 201]);
+        saleId = attempts[0].body.saleId;
+        assert.equal(attempts[0].body.total, 5.01);
+        assert.equal(attempts[0].body.saleId, attempts[1].body.saleId);
+        assert.equal((await pool.query("SELECT COUNT(*) FROM sales")).rows[0].count, "1");
+        assert.equal((await pool.query("SELECT current_stock FROM products WHERE product_id=$1", [productId])).rows[0].current_stock, 12);
+        await expect("sales", { method: "POST", cookie: cashierCookie, body: { ...payload, items: [{ productId, quantity: 1 }] } }, 409);
+        await expect(`products/${productId}`, { method: "PATCH", cookie: t.ownerCookie, body: { productName: "Renamed Chicken", category: "Frozen", unit: "kg", sellingPrice: 12, minimumStock: 2 } });
+        const stale = await expect("sales", { method: "POST", cookie: cashierCookie, body: { requestId: crypto.randomUUID(), items: [{ productId, quantity: 1, unitPrice: 10.01 }] } }, 409);
+        assert.equal(stale.body.code, "PRICE_CHANGED");
+        const receipt = (await expect(`sales/${saleId}`, { cookie: cashierCookie })).body;
+        assert.equal(receipt.items[0].name, "Chicken");
+        assert.equal(receipt.items[0].price, 10.01);
+        assert.match(receipt.soldAt, /Z$/);
+        assert.equal((await expect("customers", { cookie: t.ownerCookie })).body[0].total_purchases, 5.01);
+        assert.equal((await expect("reports/summary", { cookie: t.ownerCookie })).body.sales_total, 5.01);
+        await expect("sales?from=2026-02-31", { cookie: cashierCookie }, 400);
+        assert.equal((await expect("sales?from=2000-01-01&to=2000-01-02", { cookie: cashierCookie })).body.length, 0);
+        await expect("sales?offset=-1", { cookie: cashierCookie }, 400);
+        assert.equal((await expect("sales?offset=100", { cookie: cashierCookie })).body.length, 0);
+        const roundingProduct = (await expect("products", { method: "POST", cookie: t.ownerCookie, body: { productName: "Rounding Check", category: "Test", unit: "kg", sellingPrice: 1.13, currentStock: 1, minimumStock: 0 } }, 201)).body;
+        const roundedSale = (await expect("sales", { method: "POST", cookie: cashierCookie, body: { items: [{ productId: roundingProduct.productId, quantity: 0.5 }] } }, 201)).body;
+        assert.equal(roundedSale.total, 0.57);
+        assert.equal((await pool.query("SELECT line_total FROM sale_items WHERE sale_id=$1", [roundedSale.saleId])).rows[0].line_total, roundedSale.total);
+        await expect(`sales/${roundedSale.saleId}/void`, { method: "POST", cookie: t.ownerCookie, body: { reason: "Rounding verification" } });
+    });
+    await t.test("overselling is prevented under concurrent checkouts, and failures roll back", async () => {
+        const product = await expect("products", { method: "POST", cookie: t.ownerCookie, body: { productName: "Last Pack", category: "Frozen", unit: "pack", sellingPrice: 20, currentStock: 1, minimumStock: 0 } }, 201);
+        const body = { items: [{ productId: product.body.productId, quantity: 1 }] };
+        const attempts = await Promise.all([1, 2].map(() => call("sales", { method: "POST", cookie: cashierCookie, body })));
+        assert.deepEqual(attempts.map((item) => item.status).sort(), [201, 400]);
+        await expect("sales", { method: "POST", cookie: cashierCookie, body: { customerId: 999999, items: [{ productId, quantity: 1 }] } }, 400);
+        assert.equal((await pool.query("SELECT current_stock FROM products WHERE product_id=$1", [productId])).rows[0].current_stock, 12);
+        await expect(`products/${product.body.productId}`, { method: "DELETE", cookie: t.ownerCookie, body: {} });
+        const archivedSale = (await expect("sales", { cookie: t.ownerCookie })).body.find((sale) => sale.sale_id !== saleId && sale.status === "Completed");
+        await expect(`sales/${archivedSale.sale_id}/void`, { method: "POST", cookie: t.ownerCookie, body: { reason: "Restore archived product" } });
+        const restored = (await pool.query("SELECT is_active, current_stock FROM products WHERE product_id=$1", [product.body.productId])).rows[0];
+        assert.equal(restored.is_active, 1);
+        assert.equal(restored.current_stock, 1);
+        await expect(`products/${productId}`, { method: "DELETE", cookie: t.ownerCookie, body: {} }, 400);
+    });
+    await t.test("voiding restores stock exactly once and excludes revenue", async () => {
+        await expect(`sales/${saleId}/void`, { method: "POST", cookie: cashierCookie, body: { reason: "Returned" } }, 403);
+        const attempts = await Promise.all([1, 2].map(() => call(`sales/${saleId}/void`, { method: "POST", cookie: t.ownerCookie, body: { reason: "Returned" } })));
+        assert.deepEqual(attempts.map((item) => item.status).sort(), [200, 409]);
+        assert.equal((await pool.query("SELECT current_stock FROM products WHERE product_id=$1", [productId])).rows[0].current_stock, 12.5);
+        assert.equal((await expect("customers", { cookie: t.ownerCookie })).body[0].total_purchases, 0);
+        assert.equal((await expect(`sales/${saleId}`, { cookie: t.ownerCookie })).body.voidReason, "Returned");
+    });
+    await t.test("supplier deactivation, staff revocation, self-protection, password changes, expiry, logout", async () => {
+        await expect(`suppliers/${supplierId}`, { method: "PATCH", cookie: t.ownerCookie, body: { supplierName: "Frozen Supplier", contactPerson: "Test Contact", contactNumber: "09999999999", status: "Inactive" } });
+        await expect("stock-in", { method: "POST", cookie: clerkCookie, body: { productId, quantity: 1, supplierId } }, 400);
+        const staff = (await expect("users", { cookie: t.ownerCookie })).body.find((user) => user.username === "cashier");
+        await expect(`users/${staff.user_id}`, { method: "PATCH", cookie: t.ownerCookie, body: { isActive: false } });
+        await expect("products", { cookie: cashierCookie }, 401);
+        await expect("login", { method: "POST", body: account("cashier", "Cashier") }, 401);
+        await expect(`users/${t.ownerId}`, { method: "PATCH", cookie: t.ownerCookie, body: { isActive: false } }, 400);
+        await expect("account/password", { method: "POST", cookie: clerkCookie, body: { currentPassword: "wrong", newPassword: "new-secure-password" } }, 400);
+        await expect("account/password", { method: "POST", cookie: clerkCookie, body: { currentPassword: password, newPassword: "new-secure-password" } });
+        await expect("products", { cookie: clerkCookie }, 401);
+        clerkCookie = (await expect("login", { method: "POST", body: { ...account("clerk", "Store Clerk"), password: "new-secure-password" } })).cookie;
+        await pool.query("UPDATE sessions SET expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE user_id = (SELECT user_id FROM users WHERE username='clerk')");
+        await expect("products", { cookie: clerkCookie }, 401);
+        await expect("logout", { method: "POST", cookie: t.ownerCookie, body: {} });
+        await expect("products", { cookie: t.ownerCookie }, 401);
+    });
+});
