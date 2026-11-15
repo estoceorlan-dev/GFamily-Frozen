@@ -53,6 +53,12 @@ test("PostgreSQL HTTP workflows, permissions, concurrency, and persistence", { s
     let productId, customerId, supplierId, cashierCookie, clerkCookie, saleId;
     await t.test("catalog, contacts, staff creation and role permissions", async () => {
         const owner = t.ownerCookie;
+        const initialOptions = (await expect("product-options", { cookie: owner })).body;
+        assert.ok(initialOptions.categories.length > 0);
+        assert.ok(initialOptions.units.length > 0);
+        await expect("product-options/categories", { method: "POST", cookie: owner, body: { name: "Frozen" } }, 201);
+        await expect("product-options/units", { method: "POST", cookie: owner, body: { name: "kg" } }, 201);
+        await expect("product-options/categories", { method: "POST", cookie: owner, body: { name: "frozen" } }, 409);
         const product = await expect("products", { method: "POST", cookie: owner, body: { productName: "Chicken", category: "Frozen", unit: "kg", sellingPrice: "10.01", currentStock: 10, minimumStock: 2 } }, 201);
         productId = product.body.productId;
         assert.ok(Number.isInteger(productId));

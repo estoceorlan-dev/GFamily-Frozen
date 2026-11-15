@@ -115,6 +115,30 @@ test("owner setup shows its token field and toggles password visibility", async 
     } finally { app.dom.window.close(); }
 });
 
+test("sign out requires confirmation and product fields use saved options", async () => {
+    const app = await dashboard("admindashboard.html", "Owner / Manager", async (url) => {
+        if (url === "/api/product-options") {
+            return new Response(JSON.stringify({ categories: ["Frozen", "Seafood"], units: ["kg", "pack"] }));
+        }
+    });
+    try {
+        app.window.confirmLogout();
+        assert.ok(app.document.getElementById("modalOverlay").classList.contains("show"));
+        assert.equal(app.document.getElementById("modalTitle").textContent, "Sign out?");
+        assert.equal(app.document.querySelector('#modalForm button[type="submit"]').textContent, "Sign out");
+        assert.ok(!app.calls.some((call) => call.url === "/api/logout"));
+        app.window.closeModal();
+
+        await app.window.addProduct();
+        const category = app.document.querySelector('#modalForm [name="category"]');
+        const unit = app.document.querySelector('#modalForm [name="unit"]');
+        assert.equal(category.tagName, "SELECT");
+        assert.deepEqual([...category.options].map((option) => option.textContent), ["Select category", "Frozen", "Seafood"]);
+        assert.equal(unit.tagName, "SELECT");
+        assert.deepEqual([...unit.options].map((option) => option.textContent), ["Select unit", "kg", "pack"]);
+    } finally { app.dom.window.close(); }
+});
+
 test("fractional cart, double-click checkout protection, server receipt values, and cashier refresh", async () => {
     let releaseSale;
     const salePending = new Promise((done) => { releaseSale = done; });

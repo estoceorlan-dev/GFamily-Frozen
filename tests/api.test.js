@@ -200,7 +200,7 @@ async function signIn(env, username) {
 
 test("unauthenticated requests cannot access protected data", async () => {
     const env = { DB: createDatabase() };
-    for (const path of ["products", "customers", "sales", "inventory", "suppliers", "users", "reports/summary"]) {
+    for (const path of ["products", "product-options", "customers", "sales", "inventory", "suppliers", "users", "reports/summary"]) {
         const { response } = await call(env, path);
         assert.equal(response.status, 401, `Expected ${path} to require a session`);
     }

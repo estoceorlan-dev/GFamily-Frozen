@@ -478,6 +478,9 @@
   .modal-error {
     @apply mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs leading-relaxed text-red-800;
   }
+  .modal-description {
+    @apply mb-5 text-sm leading-6 text-zinc-600;
+  }
   .receipt-box {
     @apply max-w-xl;
   }

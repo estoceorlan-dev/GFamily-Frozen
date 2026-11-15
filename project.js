@@ -134,6 +134,17 @@ async function logout() {
     catch (error) { showMessage(error.message); if (button) button.disabled = false; }
 }
 
+function confirmLogout() {
+    openModal({
+        title: "Sign out?",
+        message: "You will need to sign in again to access your workspace.",
+        fields: [],
+        submitLabel: "Sign out",
+        submitClass: "btn btn-danger",
+        onSubmit: logout,
+    });
+}
+
 function toggleSidebar(force) {
     const wasOpen = document.body.classList.contains("nav-open");
     const open = force === undefined ? !wasOpen : force;
@@ -266,13 +277,19 @@ function openModal(options) {
     if (!overlay || !title || !fields || !form) return;
     title.textContent = options.title;
     fields.replaceChildren();
+    if (options.message) {
+        const message = document.createElement("p");
+        message.className = "modal-description";
+        message.textContent = options.message;
+        fields.append(message);
+    }
     const modalError = document.createElement("p");
     modalError.className = "modal-error";
     modalError.setAttribute("role", "alert");
     modalError.hidden = true;
     fields.append(modalError);
 
-    for (const field of options.fields) {
+    for (const field of options.fields || []) {
         const group = document.createElement("div");
         group.className = "form-group";
         const label = document.createElement("label");
@@ -298,9 +315,14 @@ function openModal(options) {
         fields.append(group);
     }
 
+    const submit = form.querySelector('button[type="submit"]');
+    const cancel = form.querySelector('button[type="button"]');
+    submit.textContent = options.submitLabel || "Save";
+    submit.className = options.submitClass || "btn btn-primary";
+    cancel.textContent = options.cancelLabel || "Cancel";
+
     form.onsubmit = async (event) => {
         event.preventDefault();
-        const submit = form.querySelector('button[type="submit"]');
         submit.disabled = true;
         modalError.hidden = true;
         try {
@@ -316,7 +338,7 @@ function openModal(options) {
     };
     overlay.classList.add("show");
     overlay.returnFocus = document.activeElement;
-    form.querySelector("input, select")?.focus();
+    (form.querySelector("input, select") || submit)?.focus();
 }
 
 function closeModal() {
@@ -365,13 +387,49 @@ function printReceipt() {
     window.print();
 }
 
-function addProduct() {
+let productOptions = { categories: [], units: [] };
+
+async function loadProductOptions() {
+    productOptions = await apiRequest("/api/product-options");
+    return productOptions;
+}
+
+function selectOptions(values, selected, placeholder) {
+    const options = [...new Set([selected, ...values].filter(Boolean))];
+    return [{ value: "", label: placeholder }, ...options.map((value) => ({ value, label: value }))];
+}
+
+async function addProductOption(type) {
+    const category = type === "category";
+    const label = category ? "Category" : "Unit";
+    const endpoint = category ? "categories" : "units";
+    openModal({
+        title: `Add ${label.toLowerCase()}`,
+        fields: [{ name: "name", label: `${label} name`, maxLength: category ? 80 : 24, required: true }],
+        submitLabel: `Add ${label.toLowerCase()}`,
+        onSubmit: async (data) => {
+            await apiRequest(`/api/product-options/${endpoint}`, { method: "POST", body: JSON.stringify(data) });
+            await loadProductOptions();
+            showMessage(`${label} added successfully.`);
+        },
+    });
+}
+
+function addCategory() { return addProductOption("category"); }
+function addUnit() { return addProductOption("unit"); }
+
+async function addProduct() {
+    try { await loadProductOptions(); }
+    catch (error) { return showMessage(error.message); }
+    if (!productOptions.categories.length || !productOptions.units.length) {
+        return showMessage("Add at least one category and unit before creating a product.");
+    }
     openModal({
         title: "Add Product",
         fields: [
             { name: "productName", label: "Product name", required: true },
-            { name: "category", label: "Category", required: true },
-            { name: "unit", label: "Unit", value: "unit", required: true },
+            { name: "category", label: "Category", type: "select", required: true, options: selectOptions(productOptions.categories, "", "Select category") },
+            { name: "unit", label: "Unit", type: "select", required: true, options: selectOptions(productOptions.units, "", "Select unit") },
             { name: "sellingPrice", label: "Selling price (₱)", type: "number", min: "0", step: "0.01", value: "0", required: true },
             { name: "currentStock", label: "Opening stock", type: "number", min: "0", step: "0.01", value: "0", required: true },
             { name: "minimumStock", label: "Low-stock threshold", type: "number", min: "0", step: "0.01", value: "0", required: true },
@@ -384,15 +442,17 @@ function addProduct() {
     });
 }
 
-function editProduct(button) {
+async function editProduct(button) {
     const product = productCatalog.find((item) => Number(item.product_id) === Number(button.dataset.productId));
     if (!product) return showMessage("Product not found. Refresh and try again.");
+    try { await loadProductOptions(); }
+    catch (error) { return showMessage(error.message); }
     openModal({
         title: `Edit ${product.product_name}`,
         fields: [
             { name: "productName", label: "Product name", value: product.product_name, required: true },
-            { name: "category", label: "Category", value: product.category, required: true },
-            { name: "unit", label: "Unit", value: product.unit, required: true },
+            { name: "category", label: "Category", type: "select", value: product.category, required: true, options: selectOptions(productOptions.categories, product.category, "Select category") },
+            { name: "unit", label: "Unit", type: "select", value: product.unit, required: true, options: selectOptions(productOptions.units, product.unit, "Select unit") },
             { name: "sellingPrice", label: "Selling price (₱)", type: "number", min: "0", step: "0.01", value: product.selling_price, required: true },
             { name: "minimumStock", label: "Low-stock threshold", type: "number", min: "0", step: "0.01", value: product.minimum_stock, required: true },
         ],

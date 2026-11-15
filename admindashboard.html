@@ -367,7 +367,7 @@
         </nav>
         <div class="sidebar-footer">
           <div class="logout">
-            <button type="button" onclick="logout()">
+            <button type="button" onclick="confirmLogout()">
               <svg
                 class="size-[18px]"
                 viewBox="0 0 24 24"
@@ -765,6 +765,12 @@
             <div class="page-title">
               <h1 id="productsTitle">Products</h1>
               <div class="page-actions">
+                <button type="button" class="btn btn-warning" onclick="addCategory()">
+                  Add category
+                </button>
+                <button type="button" class="btn btn-warning" onclick="addUnit()">
+                  Add unit
+                </button>
                 <button
                   type="button"
                   class="btn btn-primary"

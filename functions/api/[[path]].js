@@ -163,6 +163,36 @@ async function products(env) {
     return json(result.results);
 }
 
+async function productOptions(env) {
+    const [categories, units] = await Promise.all([
+        env.DB.prepare("SELECT name FROM product_categories ORDER BY lower(name)").all(),
+        env.DB.prepare("SELECT name FROM product_units ORDER BY lower(name)").all(),
+    ]);
+    return json({
+        categories: categories.results.map((item) => item.name),
+        units: units.results.map((item) => item.name),
+    });
+}
+
+async function createProductOption(request, env, type) {
+    const body = await readBody(request);
+    const category = type === "categories";
+    const label = category ? "Category" : "Unit";
+    const maxLength = category ? 80 : 24;
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
+    if (!name || name.length > maxLength) return json({ error: `${label} must be between 1 and ${maxLength} characters.` }, 400);
+    const table = category ? "product_categories" : "product_units";
+    try {
+        await env.DB.prepare(`INSERT INTO ${table} (name) VALUES (?)`).bind(name).run();
+        return json({ name }, 201);
+    } catch (error) {
+        if (error.code === "23505" || String(error.message).includes("UNIQUE constraint failed")) {
+            return json({ error: `That ${label.toLowerCase()} already exists.` }, 409);
+        }
+        throw error;
+    }
+}
+
 async function createProduct(request, env) {
     const body = await readBody(request);
     if (!hasFields(body, ["productName", "category", "unit", "sellingPrice", "currentStock", "minimumStock"])) {
@@ -515,6 +545,16 @@ export async function onRequest({ request, env }) {
             return json({ user: user ? { userId: user.user_id, username: user.username, role: user.role } : null }, 200, { "cache-control": "no-store" });
         }
         if (path === "register" && method === "POST") return await register(request, env);
+
+        if (path === "product-options" && method === "GET") {
+            const user = await requireRole(request, env, ["Owner / Manager"]);
+            return user instanceof Response ? user : await productOptions(env);
+        }
+        const productOptionMatch = path.match(/^product-options\/(categories|units)$/);
+        if (productOptionMatch && method === "POST") {
+            const user = await requireRole(request, env, ["Owner / Manager"]);
+            return user instanceof Response ? user : await createProductOption(request, env, productOptionMatch[1]);
+        }
 
         const saleMatch = path.match(/^sales\/([a-f0-9-]{36})(\/void)?$/i);
         if (saleMatch && ((method === "GET" && !saleMatch[2]) || (method === "POST" && saleMatch[2]))) {
