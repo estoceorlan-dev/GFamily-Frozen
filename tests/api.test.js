@@ -189,10 +189,10 @@ async function createOwner(env, username = "manager") {
     });
 }
 
-async function signIn(env, username, role) {
+async function signIn(env, username) {
     const result = await call(env, "login", {
         method: "POST",
-        body: { username, password: "secure-password", role },
+        body: { username, password: "secure-password" },
     });
     const cookie = result.response.headers.get("set-cookie");
     return { ...result, cookie: cookie?.split(";")[0] };
@@ -227,8 +227,9 @@ test("first account becomes the owner and later anonymous registration is blocke
 test("roles have distinct server-side permissions and logout revokes the cookie", async () => {
     const env = { DB: createDatabase() };
     assert.equal((await createOwner(env)).response.status, 201);
-    const ownerLogin = await signIn(env, "manager", "Owner / Manager");
+    const ownerLogin = await signIn(env, "manager");
     assert.equal(ownerLogin.response.status, 200);
+    assert.equal(ownerLogin.body.role, "Owner / Manager");
     assert.match(ownerLogin.cookie, /^gfamily_session=/);
     assert.match(ownerLogin.response.headers.get("set-cookie"), /HttpOnly; SameSite=Strict; Path=\/; Max-Age=43200; Secure/);
 
@@ -245,8 +246,9 @@ test("roles have distinct server-side permissions and logout revokes the cookie"
         body: { username: "cashier", password: "secure-password", role: "Cashier" },
     });
     assert.equal(createdCashier.response.status, 201);
-    const cashierLogin = await signIn(env, "cashier", "Cashier");
+    const cashierLogin = await signIn(env, "cashier");
     assert.equal(cashierLogin.response.status, 200);
+    assert.equal(cashierLogin.body.role, "Cashier");
     assert.equal((await call(env, "products", { cookie: cashierLogin.cookie })).response.status, 200);
     assert.equal((await call(env, "users", { cookie: cashierLogin.cookie })).response.status, 403);
     assert.equal((await call(env, "reports/summary", { cookie: cashierLogin.cookie })).response.status, 403);
@@ -289,7 +291,7 @@ test("roles have distinct server-side permissions and logout revokes the cookie"
         body: { username: "clerk", password: "secure-password", role: "Store Clerk" },
     });
     assert.equal(createdClerk.response.status, 201);
-    const clerkLogin = await signIn(env, "clerk", "Store Clerk");
+    const clerkLogin = await signIn(env, "clerk");
     assert.equal((await call(env, "inventory", { cookie: clerkLogin.cookie })).response.status, 200);
     assert.equal((await call(env, "suppliers", { cookie: clerkLogin.cookie })).response.status, 200);
     assert.equal((await call(env, "sales", { cookie: clerkLogin.cookie })).response.status, 403);
@@ -303,7 +305,7 @@ test("roles have distinct server-side permissions and logout revokes the cookie"
 test("invalid sale date ranges are rejected before querying sales", async () => {
     const env = { DB: createDatabase() };
     await createOwner(env);
-    const ownerLogin = await signIn(env, "manager", "Owner / Manager");
+    const ownerLogin = await signIn(env, "manager");
     const { response } = await call(env, "sales?from=2026-02-31", { cookie: ownerLogin.cookie });
     assert.equal(response.status, 400);
 });

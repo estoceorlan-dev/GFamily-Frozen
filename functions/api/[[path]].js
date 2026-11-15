@@ -48,7 +48,7 @@ async function login(request, env) {
     const user = await env.DB.prepare(
         "SELECT user_id, username, password_hash, role FROM users WHERE username = ? AND is_active = 1 LIMIT 1",
     ).bind(String(body.username).trim().toLowerCase()).first();
-    if (!user || (body.role && user.role !== body.role) || !(await verifyPassword(String(body.password), user.password_hash))) {
+    if (!user || !(await verifyPassword(String(body.password), user.password_hash))) {
         return json({ error: "Invalid username or password." }, 401);
     }
 

@@ -103,7 +103,7 @@ test("owner setup shows its token field and toggles password visibility", async 
     try {
         app.window.toggleAuthMode();
         assert.equal(app.document.getElementById("setupTokenGroup").style.display, "block");
-        assert.equal(app.document.getElementById("role").disabled, true);
+        assert.equal(app.document.getElementById("role"), null);
         const input = app.document.getElementById("password");
         input.value = "synthetic-password";
         input.dispatchEvent(new app.window.Event("input"));

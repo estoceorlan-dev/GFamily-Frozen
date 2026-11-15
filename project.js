@@ -73,13 +73,12 @@ function showMessage(message) {
 async function login() {
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
-    const role = document.getElementById("role").value;
     if (!username || !password) return showMessage("Enter your username and password.");
 
     try {
         currentSession = await apiRequest("/api/login", {
             method: "POST",
-            body: JSON.stringify({ username, password, role }),
+            body: JSON.stringify({ username, password }),
         });
         window.location.href = dashboardPath(currentSession.role);
     } catch (error) {
@@ -97,9 +96,6 @@ function setAuthMode(mode) {
     document.getElementById("confirmPassword").required = registering;
     document.getElementById("setupTokenGroup")?.style.setProperty("display", registering && window.setupTokenRequired ? "block" : "none");
     document.getElementById("password").autocomplete = registering ? "new-password" : "current-password";
-    const role = document.getElementById("role");
-    role.value = "Owner / Manager";
-    role.disabled = registering;
     showMessage(registering ? "Create your owner account." : "");
 }
 
